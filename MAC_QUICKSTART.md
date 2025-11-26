@@ -151,11 +151,13 @@ On Mac, closing the last window doesn't quit the app (standard Mac behavior):
 ### Issue 1: "Permission Denied" when running scripts
 
 **Error:**
+
 ```bash
 zsh: permission denied: ./setup.sh
 ```
 
 **Fix:**
+
 ```bash
 chmod +x setup.sh start.sh
 ```
@@ -165,11 +167,13 @@ chmod +x setup.sh start.sh
 ### Issue 2: Python command not found
 
 **Error:**
+
 ```bash
 python: command not found
 ```
 
 **Fix:**
+
 ```bash
 # Use python3 instead
 python3 --version
@@ -184,6 +188,7 @@ source ~/.zshrc
 ### Issue 3: pip3 not found
 
 **Fix:**
+
 ```bash
 # Install pip for Python 3
 python3 -m ensurepip --upgrade
@@ -197,6 +202,7 @@ brew install python3
 ### Issue 4: Node/npm not found
 
 **Fix:**
+
 ```bash
 # Install via Homebrew
 brew install node
@@ -211,11 +217,13 @@ npm --version
 ### Issue 5: Port 8000 already in use
 
 **Error:**
+
 ```
 ERROR: [Errno 48] Address already in use
 ```
 
 **Fix:**
+
 ```bash
 # Find and kill process using port 8000
 lsof -ti:8000 | xargs kill -9
@@ -232,6 +240,7 @@ uvicorn main:app --host 0.0.0.0 --port 8001
 **Cause:** macOS restricts access to some system processes
 
 **Fix:**
+
 ```bash
 # Grant Terminal/iTerm Full Disk Access
 # 1. Go to System Preferences → Security & Privacy → Privacy
@@ -246,11 +255,13 @@ uvicorn main:app --host 0.0.0.0 --port 8001
 ### Issue 7: Electron app won't start
 
 **Error:**
+
 ```
 Error: Electron failed to install correctly
 ```
 
 **Fix:**
+
 ```bash
 cd frontend
 rm -rf node_modules
@@ -266,12 +277,14 @@ npm run electron-dev
 ### 1. **Native macOS Menu Bar**
 
 The Electron app integrates with macOS menu bar:
+
 - Standard keyboard shortcuts work (`Cmd+Q`, `Cmd+W`)
 - Native notifications support
 
 ### 2. **Spotlight Integration**
 
 Add to Spotlight for quick launch:
+
 ```bash
 # Create alias in Applications folder
 cd frontend
@@ -282,6 +295,7 @@ npm run build
 ### 3. **Activity Monitor Integration**
 
 Task Manager Pro shows similar info to macOS Activity Monitor but with:
+
 - Web-based interface
 - Real-time API
 - Custom filtering and sorting
@@ -292,11 +306,13 @@ Task Manager Pro shows similar info to macOS Activity Monitor but with:
 ## 📊 Performance Notes for Mac
 
 ### Resource Usage:
+
 - **Backend:** ~50MB RAM, ~1% CPU (idle)
 - **Frontend (Electron):** ~150MB RAM, ~2% CPU (idle)
 - **Frontend (Browser):** ~80MB RAM, ~1% CPU (idle)
 
 ### Optimization Tips:
+
 ```bash
 # Use browser mode for lower memory usage
 npm run dev  # Instead of npm run electron-dev
@@ -360,13 +376,13 @@ rm -rf backend/__pycache__     # Clean Python cache
 
 The backend automatically handles Mac-specific differences:
 
-| Feature | Windows | macOS | Handled By |
-|---------|---------|-------|------------|
-| Disk Path | `C:\` | `/` | `platform.system()` |
-| Process Attributes | Full set | Mac subset | Conditional loading |
-| File Descriptors | ❌ | ✅ `num_fds` | Platform check |
-| I/O Priority | `ionice` | Limited | Linux-only feature |
-| Process Nice | Limited | ✅ Full support | Platform check |
+| Feature            | Windows  | macOS           | Handled By          |
+| ------------------ | -------- | --------------- | ------------------- |
+| Disk Path          | `C:\`    | `/`             | `platform.system()` |
+| Process Attributes | Full set | Mac subset      | Conditional loading |
+| File Descriptors   | ❌       | ✅ `num_fds`    | Platform check      |
+| I/O Priority       | `ionice` | Limited         | Linux-only feature  |
+| Process Nice       | Limited  | ✅ Full support | Platform check      |
 
 ---
 
