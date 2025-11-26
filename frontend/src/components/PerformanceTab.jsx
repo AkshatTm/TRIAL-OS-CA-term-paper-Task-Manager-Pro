@@ -10,25 +10,26 @@ import {
 } from "recharts";
 import { useState, useEffect } from "react";
 import { Cpu, Activity, HardDrive, Network, Zap } from "lucide-react";
+import { PERFORMANCE_HISTORY_LENGTH } from "../constants";
 
 export default function PerformanceTab({ systemStats }) {
   const [cpuHistory, setCpuHistory] = useState(
-    Array(60)
+    Array(PERFORMANCE_HISTORY_LENGTH)
       .fill(0)
       .map((_, i) => ({ time: i, value: 0 }))
   );
   const [memHistory, setMemHistory] = useState(
-    Array(60)
+    Array(PERFORMANCE_HISTORY_LENGTH)
       .fill(0)
       .map((_, i) => ({ time: i, value: 0 }))
   );
   const [diskHistory, setDiskHistory] = useState(
-    Array(60)
+    Array(PERFORMANCE_HISTORY_LENGTH)
       .fill(0)
       .map((_, i) => ({ time: i, value: 0 }))
   );
   const [gpuHistory, setGpuHistory] = useState(
-    Array(60)
+    Array(PERFORMANCE_HISTORY_LENGTH)
       .fill(0)
       .map((_, i) => ({ time: i, value: 0 }))
   );

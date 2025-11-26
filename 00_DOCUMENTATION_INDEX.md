@@ -7,15 +7,19 @@
 ## 🚀 Quick Access
 
 ### For First-Time Users
+
 👉 **Start Here:** [01_QUICKSTART.md](./01_QUICKSTART.md) - Get running in 5 minutes
 
 ### For Academic Review
+
 👉 **Start Here:** [06_PROJECT_SUMMARY.md](./06_PROJECT_SUMMARY.md) - Complete project overview
 
 ### For Developers
+
 👉 **Start Here:** [03_ARCHITECTURE.md](./03_ARCHITECTURE.md) - Technical deep dive
 
 ### For Troubleshooting
+
 👉 **Start Here:** [07_TROUBLESHOOTING.md](./07_TROUBLESHOOTING.md) - Fix common issues
 
 ---
@@ -24,7 +28,8 @@
 
 ### 1. 🚀 Getting Started
 
-**[01_QUICKSTART.md](./01_QUICKSTART.md)** - *5 minutes*
+**[01_QUICKSTART.md](./01_QUICKSTART.md)** - _5 minutes_
+
 - Prerequisites and installation
 - Running the application
 - First steps tutorial
@@ -37,7 +42,8 @@
 
 ### 2. 🎯 Understanding the Project
 
-**[02_PROBLEM_STATEMENT.md](./02_PROBLEM_STATEMENT.md)** - *15 minutes*
+**[02_PROBLEM_STATEMENT.md](./02_PROBLEM_STATEMENT.md)** - _15 minutes_
+
 - Project information and team
 - Problem analysis and objectives
 - Educational context and OS concepts
@@ -50,7 +56,8 @@
 
 ### 3. 📋 Project Overview
 
-**[06_PROJECT_SUMMARY.md](./06_PROJECT_SUMMARY.md)** - *20 minutes*
+**[06_PROJECT_SUMMARY.md](./06_PROJECT_SUMMARY.md)** - _20 minutes_
+
 - Complete project overview
 - Technical implementation details
 - Features and achievements
@@ -64,7 +71,8 @@
 
 ### 4. 🏗️ Technical Architecture
 
-**[03_ARCHITECTURE.md](./03_ARCHITECTURE.md)** - *30 minutes*
+**[03_ARCHITECTURE.md](./03_ARCHITECTURE.md)** - _30 minutes_
+
 - System architecture diagrams
 - Technology stack breakdown
 - Component architecture
@@ -80,7 +88,8 @@
 
 ### 5. 🎓 Deep Technical Explanation
 
-**[04_HOW_IT_WORKS.md](./04_HOW_IT_WORKS.md)** - *45 minutes*
+**[04_HOW_IT_WORKS.md](./04_HOW_IT_WORKS.md)** - _45 minutes_
+
 - System monitoring internals
   - CPU monitoring mechanics
   - Memory management details
@@ -100,7 +109,8 @@
 
 ### 6. 📊 Visual Guides & Flowcharts
 
-**[05_DIAGRAMS.md](./05_DIAGRAMS.md)** - *20 minutes*
+**[05_DIAGRAMS.md](./05_DIAGRAMS.md)** - _20 minutes_
+
 - System architecture diagrams
 - Data flow visualizations
 - Process state machines
@@ -116,7 +126,8 @@
 
 ### 7. 🔧 Troubleshooting Guide
 
-**[07_TROUBLESHOOTING.md](./07_TROUBLESHOOTING.md)** - *As needed*
+**[07_TROUBLESHOOTING.md](./07_TROUBLESHOOTING.md)** - _As needed_
+
 - Installation issues
 - Backend problems (ports, permissions, modules)
 - Frontend issues (blank page, API errors)
@@ -132,7 +143,8 @@
 
 ### 8. 🤝 Contributing
 
-**[08_CONTRIBUTING.md](./08_CONTRIBUTING.md)** - *15 minutes*
+**[08_CONTRIBUTING.md](./08_CONTRIBUTING.md)** - _15 minutes_
+
 - Development setup
 - Project structure
 - Coding standards (Python & JavaScript)
@@ -148,7 +160,8 @@
 
 ### 9. 📖 Main Documentation
 
-**[README.md](./README.md)** - *10 minutes*
+**[README.md](./README.md)** - _10 minutes_
+
 - Project overview and features
 - Quick start instructions
 - Educational value and OS concepts
@@ -251,17 +264,17 @@
 
 ## 📊 Documentation Statistics
 
-| File | Lines | Purpose | Read Time |
-|------|-------|---------|-----------|
-| README.md | ~450 | Main documentation | 10 min |
-| QUICKSTART.md | ~160 | Setup guide | 5 min |
-| PROBLEM_STATEMENT.md | ~230 | Requirements | 15 min |
-| ARCHITECTURE.md | ~660 | Technical design | 30 min |
-| HOW_IT_WORKS.md | ~870 | Deep dive | 45 min |
-| DIAGRAMS.md | ~550 | Visual guides | 20 min |
-| TROUBLESHOOTING.md | ~500 | Issue resolution | As needed |
-| CONTRIBUTING.md | ~300 | Dev guidelines | 15 min |
-| PROJECT_SUMMARY.md | ~400 | Academic summary | 20 min |
+| File                 | Lines | Purpose            | Read Time |
+| -------------------- | ----- | ------------------ | --------- |
+| README.md            | ~450  | Main documentation | 10 min    |
+| QUICKSTART.md        | ~160  | Setup guide        | 5 min     |
+| PROBLEM_STATEMENT.md | ~230  | Requirements       | 15 min    |
+| ARCHITECTURE.md      | ~660  | Technical design   | 30 min    |
+| HOW_IT_WORKS.md      | ~870  | Deep dive          | 45 min    |
+| DIAGRAMS.md          | ~550  | Visual guides      | 20 min    |
+| TROUBLESHOOTING.md   | ~500  | Issue resolution   | As needed |
+| CONTRIBUTING.md      | ~300  | Dev guidelines     | 15 min    |
+| PROJECT_SUMMARY.md   | ~400  | Academic summary   | 20 min    |
 
 **Total Documentation:** ~4,100 lines  
 **Complete Read Time:** ~3 hours (if reading everything)
@@ -271,30 +284,35 @@
 ## 🎯 Key Features of This Documentation
 
 ### ✅ Beginner-Friendly
+
 - Clear step-by-step instructions
 - Explains concepts from basics
 - Provides context and "why"
 - Includes examples and analogies
 
 ### ✅ Comprehensive
+
 - Covers all aspects of the project
 - From installation to advanced concepts
 - Both theory and implementation
 - Visual aids and flowcharts
 
 ### ✅ Practical
+
 - Real code examples
 - Actual commands to run
 - Troubleshooting solutions
 - Pro tips and best practices
 
 ### ✅ Academic
+
 - Demonstrates OS concepts
 - Explains theoretical foundations
 - Links theory to practice
 - Suitable for project submission
 
 ### ✅ Professional
+
 - Well-structured and organized
 - Proper technical documentation
 - Industry-standard practices
@@ -307,10 +325,12 @@
 ### Source Code Files
 
 **Backend:**
+
 - `backend/main.py` - FastAPI application (373 lines)
 - `backend/requirements.txt` - Python dependencies
 
 **Frontend:**
+
 - `frontend/src/App.jsx` - Main component (125 lines)
 - `frontend/src/components/Dashboard.jsx` - Dashboard view
 - `frontend/src/components/PerformanceTab.jsx` - Performance metrics
@@ -321,6 +341,7 @@
 - `frontend/package.json` - Node dependencies
 
 **Scripts:**
+
 - `setup.bat` / `setup.sh` - Automated setup
 - `start.bat` / `start.sh` - Automated start
 
@@ -372,15 +393,18 @@ cd frontend && npm run electron-dev
 ## 🆘 Getting Help
 
 ### Step 1: Check Documentation
+
 - Read [01_QUICKSTART.md](./01_QUICKSTART.md) for setup issues
 - Check [07_TROUBLESHOOTING.md](./07_TROUBLESHOOTING.md) for specific errors
 - Review [04_HOW_IT_WORKS.md](./04_HOW_IT_WORKS.md) for understanding issues
 
 ### Step 2: Search for Solution
+
 - Look for error message in documentation
 - Check if issue is listed in Troubleshooting Guide
 
 ### Step 3: Ask for Help
+
 - Provide full error message
 - Include your environment (OS, Python version, Node version)
 - Mention what you've already tried
@@ -390,6 +414,7 @@ cd frontend && npm run electron-dev
 ## 📝 Documentation Changelog
 
 **Version 1.0** - November 2025
+
 - Initial complete documentation suite
 - 9 comprehensive documentation files
 - 4,100+ lines of documentation
@@ -427,7 +452,7 @@ After reading all documentation, you will understand:
 ✅ System programming with psutil  
 ✅ Real-time data visualization  
 ✅ Software architecture design  
-✅ Cross-platform development  
+✅ Cross-platform development
 
 ---
 
@@ -437,10 +462,10 @@ After reading all documentation, you will understand:
 👉 **Want to Learn?** Read [04_HOW_IT_WORKS.md](./04_HOW_IT_WORKS.md)  
 👉 **Need Visuals?** Check [05_DIAGRAMS.md](./05_DIAGRAMS.md)  
 👉 **Academic Review?** See [06_PROJECT_SUMMARY.md](./06_PROJECT_SUMMARY.md)  
-👉 **Having Issues?** Visit [07_TROUBLESHOOTING.md](./07_TROUBLESHOOTING.md)  
+👉 **Having Issues?** Visit [07_TROUBLESHOOTING.md](./07_TROUBLESHOOTING.md)
 
 ---
 
 **Happy Learning! 🎉📚**
 
-*This documentation represents 3+ hours of comprehensive writing to ensure anyone can understand and use Task Manager Pro effectively.*
+_This documentation represents 3+ hours of comprehensive writing to ensure anyone can understand and use Task Manager Pro effectively._

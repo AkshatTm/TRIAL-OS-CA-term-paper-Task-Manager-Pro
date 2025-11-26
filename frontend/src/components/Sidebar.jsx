@@ -1,10 +1,19 @@
 import { motion } from "framer-motion";
-import { LayoutDashboard, Activity, List, Settings } from "lucide-react";
+import {
+  LayoutDashboard,
+  Activity,
+  List,
+  Settings,
+  GitBranch,
+  AppWindow,
+} from "lucide-react";
 
 const menuItems = [
   { id: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { id: "performance", icon: Activity, label: "Performance" },
+  { id: "apps", icon: AppWindow, label: "Apps" },
   { id: "processes", icon: List, label: "Processes" },
+  { id: "processtree", icon: GitBranch, label: "Process Tree" },
 ];
 
 export default function Sidebar({ currentTab, setCurrentTab }) {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -10,30 +10,217 @@ import {
   Info,
   RefreshCw,
   Shield,
+  Zap,
 } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
+// Virtualization handles large lists efficiently; no hard row cap needed
+import { List } from "react-window";
 
 export default function ProcessList({ processes, loading, onRefresh }) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("cpu_percent");
   const [sortOrder, setSortOrder] = useState("desc");
   const [selectedProcess, setSelectedProcess] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [processDetails, setProcessDetails] = useState(null);
+  const [forceKill, setForceKill] = useState(false);
+  const listRef = useRef(null);
 
-  // Filter and sort processes
-  const filteredProcesses = processes
-    .filter(
-      (proc) =>
-        proc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        proc.pid.toString().includes(searchTerm)
-    )
-    .sort((a, b) => {
-      const aVal = a[sortBy];
-      const bVal = b[sortBy];
-      return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
-    });
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Filter and sort processes with memoization
+  const filteredProcesses = useMemo(
+    () =>
+      processes
+        .filter(
+          (proc) =>
+            proc.name
+              .toLowerCase()
+              .includes(debouncedSearchTerm.toLowerCase()) ||
+            proc.pid.toString().includes(debouncedSearchTerm)
+        )
+        .sort((a, b) => {
+          const aVal = a[sortBy];
+          const bVal = b[sortBy];
+
+          // Use string comparison for text fields
+          if (
+            sortBy === "name" ||
+            sortBy === "status" ||
+            sortBy === "username"
+          ) {
+            const comparison = String(aVal || "").localeCompare(
+              String(bVal || ""),
+              undefined,
+              { sensitivity: "base" }
+            );
+            return sortOrder === "asc" ? comparison : -comparison;
+          }
+
+          // Use numeric comparison for numeric fields
+          return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
+        }),
+    [processes, debouncedSearchTerm, sortBy, sortOrder]
+  );
+
+  // Process row renderer for virtualization
+  const ProcessRow = ({ index, style }) => {
+    const proc = filteredProcesses[index];
+    if (!proc) return null;
+
+    return (
+      <div style={style} className="border-b border-dark-border">
+        <div
+          className="flex items-center hover:bg-dark-elevated/30 transition-colors cursor-pointer px-6 py-4"
+          onClick={() => setSelectedProcess(proc)}
+        >
+          {/* Name Column */}
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium text-white flex items-center">
+              {proc.protected && (
+                <Shield
+                  className="w-4 h-4 mr-2 text-yellow-500 flex-shrink-0"
+                  title="Protected System Process"
+                />
+              )}
+              <span className="truncate">{proc.name}</span>
+            </div>
+            <div className="text-xs text-gray-500 truncate">
+              {proc.username}
+            </div>
+          </div>
+
+          {/* PID Column */}
+          <div className="w-24 text-sm text-gray-300 text-center">
+            {proc.pid}
+          </div>
+
+          {/* CPU Column */}
+          <div className="w-32 px-2">
+            <div className="flex items-center">
+              <div className="w-16 bg-dark-border rounded-full h-2 mr-2">
+                <div
+                  className="bg-gradient-to-r from-accent-primary to-accent-secondary h-2 rounded-full transition-all duration-300"
+                  style={{
+                    width: `${Math.min(proc.cpu_percent, 100)}%`,
+                  }}
+                />
+              </div>
+              <span className="text-sm text-white w-12 text-right">
+                {proc.cpu_percent}%
+              </span>
+            </div>
+          </div>
+
+          {/* Memory Column */}
+          <div className="w-28 text-sm text-gray-300 text-right px-2">
+            {proc.memory_mb} MB
+          </div>
+
+          {/* Status Column */}
+          <div className="w-28 text-center px-2">
+            <span
+              className={`text-sm font-medium ${getStatusColor(proc.status)}`}
+            >
+              {proc.status}
+            </span>
+          </div>
+
+          {/* Actions Column */}
+          <div className="w-40 flex justify-end space-x-2">
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                showProcessDetails(proc.pid);
+              }}
+              className="inline-flex items-center p-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors"
+              title="Details"
+            >
+              <Info className="w-4 h-4" />
+            </motion.button>
+            {proc.status === "stopped" ? (
+              <motion.button
+                whileHover={{ scale: proc.protected ? 1 : 1.1 }}
+                whileTap={{ scale: proc.protected ? 1 : 0.9 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleResumeProcess(proc.pid);
+                }}
+                className={`inline-flex items-center p-2 rounded-lg transition-colors ${
+                  proc.protected
+                    ? "bg-gray-500/20 text-gray-500 cursor-not-allowed"
+                    : "bg-green-500/20 text-green-400 hover:bg-green-500/30"
+                }`}
+                title={proc.protected ? "Protected System Process" : "Resume"}
+                disabled={proc.protected}
+              >
+                <Play className="w-4 h-4" />
+              </motion.button>
+            ) : (
+              <motion.button
+                whileHover={{ scale: proc.protected ? 1 : 1.1 }}
+                whileTap={{ scale: proc.protected ? 1 : 0.9 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSuspendProcess(proc.pid, proc.name, proc.protected);
+                }}
+                className={`inline-flex items-center p-2 rounded-lg transition-colors ${
+                  proc.protected
+                    ? "bg-gray-500/20 text-gray-500 cursor-not-allowed"
+                    : "bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30"
+                }`}
+                title={proc.protected ? "Protected System Process" : "Suspend"}
+                disabled={proc.protected}
+              >
+                <Pause className="w-4 h-4" />
+              </motion.button>
+            )}
+            <motion.button
+              whileHover={{ scale: proc.protected ? 1 : 1.1 }}
+              whileTap={{ scale: proc.protected ? 1 : 0.9 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleKillProcess(
+                  proc.pid,
+                  proc.name,
+                  proc.protected,
+                  forceKill
+                );
+              }}
+              className={`inline-flex items-center p-2 rounded-lg transition-colors ${
+                proc.protected
+                  ? "bg-gray-500/20 text-gray-500 cursor-not-allowed"
+                  : forceKill
+                  ? "bg-red-600/30 text-red-300 hover:bg-red-600/40 ring-1 ring-red-500"
+                  : "bg-red-500/20 text-red-400 hover:bg-red-500/30"
+              }`}
+              title={
+                proc.protected
+                  ? "Protected System Process"
+                  : forceKill
+                  ? "Force Kill Process (SIGKILL)"
+                  : "End Process (SIGTERM)"
+              }
+              disabled={proc.protected}
+            >
+              <XCircle className="w-4 h-4" />
+            </motion.button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const handleSort = (column) => {
     if (sortBy === column) {
@@ -44,7 +231,7 @@ export default function ProcessList({ processes, loading, onRefresh }) {
     }
   };
 
-  const handleKillProcess = async (pid, processName, isProtected) => {
+  const handleKillProcess = async (pid, processName, isProtected, useForce) => {
     if (isProtected) {
       toast.error(
         `Cannot terminate "${processName}". This is a protected system process.`,
@@ -56,20 +243,42 @@ export default function ProcessList({ processes, loading, onRefresh }) {
       return;
     }
 
-    if (!confirm(`Are you sure you want to end "${processName}"?`)) return;
+    const forceMsg = useForce ? " (Force Kill)" : "";
+    if (!confirm(`Are you sure you want to end "${processName}"${forceMsg}?`))
+      return;
 
     const loadingToast = toast.loading("Ending process...");
 
     try {
-      await axios.post(`/api/process/${pid}/kill`);
-      toast.success(`Process ${processName} ended successfully`, {
+      const response = await axios.post(
+        `/api/process/${pid}/kill?force=${useForce || false}`,
+        {},
+        {
+          timeout: 3000, // 3 second timeout - faster like Task Manager
+        }
+      );
+
+      // Show appropriate message based on response
+      const msg =
+        response.data.message || `Process ${processName} ended successfully`;
+      toast.success(msg, {
         id: loadingToast,
+        duration: response.data.confirmed === false ? 5000 : 3000,
       });
-      onRefresh();
+
+      // Refresh immediately for snappier UX
+      setTimeout(onRefresh, 300);
     } catch (error) {
-      toast.error(error.response?.data?.detail || "Failed to end process", {
-        id: loadingToast,
-      });
+      if (error.code === "ECONNABORTED") {
+        toast.error(`Process termination timed out. Try Force Kill mode.`, {
+          id: loadingToast,
+          duration: 5000,
+        });
+      } else {
+        toast.error(error.response?.data?.detail || "Failed to end process", {
+          id: loadingToast,
+        });
+      }
     }
   };
 
@@ -112,11 +321,29 @@ export default function ProcessList({ processes, loading, onRefresh }) {
     }
   };
 
+  const handleChangePriority = async (pid, processName, priority) => {
+    const loadingToast = toast.loading("Changing process priority...");
+
+    try {
+      await axios.post(`/api/process/${pid}/priority`, { priority });
+      toast.success(`Priority changed for ${processName}`, {
+        id: loadingToast,
+      });
+      onRefresh();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to change priority", {
+        id: loadingToast,
+      });
+    }
+  };
+
   const showProcessDetails = async (pid) => {
     const loadingToast = toast.loading("Loading process details...");
 
     try {
-      const response = await axios.get(`/api/process/${pid}`);
+      const response = await axios.get(`/api/process/${pid}`, {
+        timeout: 2000, // 2 second timeout for faster response
+      });
       setProcessDetails(response.data);
       setShowModal(true);
       toast.dismiss(loadingToast);
@@ -134,8 +361,16 @@ export default function ProcessList({ processes, loading, onRefresh }) {
       sleeping: "text-blue-400",
       stopped: "text-accent-warning",
       zombie: "text-accent-danger",
+      dead: "text-red-600",
+      "disk-sleep": "text-blue-500",
+      idle: "text-gray-500",
+      locked: "text-yellow-600",
+      parked: "text-purple-400",
+      "tracing-stop": "text-orange-400",
+      waiting: "text-cyan-400",
+      waking: "text-teal-400",
     };
-    return colors[status] || "text-gray-400";
+    return colors[status?.toLowerCase()] || "text-gray-400";
   };
 
   return (
@@ -181,6 +416,18 @@ export default function ProcessList({ processes, loading, onRefresh }) {
             )}
           </div>
           <div className="flex items-center space-x-4 text-sm">
+            <label className="flex items-center space-x-2 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={forceKill}
+                onChange={(e) => setForceKill(e.target.checked)}
+                className="w-4 h-4 accent-red-500"
+              />
+              <span className="text-gray-400 group-hover:text-white transition-colors flex items-center space-x-1">
+                <Zap className="w-4 h-4" />
+                <span>Force Kill</span>
+              </span>
+            </label>
             <span className="text-gray-400">
               Total:{" "}
               <span className="text-white font-semibold">
@@ -199,164 +446,54 @@ export default function ProcessList({ processes, loading, onRefresh }) {
 
       {/* Process Table */}
       <div className="glass-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-dark-elevated/50">
-              <tr>
-                <th
-                  onClick={() => handleSort("name")}
-                  className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
-                >
-                  Name {sortBy === "name" && (sortOrder === "asc" ? "↑" : "↓")}
-                </th>
-                <th
-                  onClick={() => handleSort("pid")}
-                  className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
-                >
-                  PID {sortBy === "pid" && (sortOrder === "asc" ? "↑" : "↓")}
-                </th>
-                <th
-                  onClick={() => handleSort("cpu_percent")}
-                  className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
-                >
-                  CPU %{" "}
-                  {sortBy === "cpu_percent" &&
-                    (sortOrder === "asc" ? "↑" : "↓")}
-                </th>
-                <th
-                  onClick={() => handleSort("memory_mb")}
-                  className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
-                >
-                  Memory{" "}
-                  {sortBy === "memory_mb" && (sortOrder === "asc" ? "↑" : "↓")}
-                </th>
-                <th
-                  onClick={() => handleSort("status")}
-                  className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
-                >
-                  Status{" "}
-                  {sortBy === "status" && (sortOrder === "asc" ? "↑" : "↓")}
-                </th>
-                <th className="px-6 py-4 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-dark-border">
-              {filteredProcesses.slice(0, 50).map((proc, index) => (
-                <motion.tr
-                  key={proc.pid}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.01 }}
-                  className="hover:bg-dark-elevated/30 transition-colors cursor-pointer"
-                  onClick={() => setSelectedProcess(proc)}
-                >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-white flex items-center">
-                      {proc.protected && (
-                        <Shield
-                          className="w-4 h-4 mr-2 text-yellow-500"
-                          title="Protected System Process"
-                        />
-                      )}
-                      {proc.name}
-                    </div>
-                    <div className="text-xs text-gray-500">{proc.username}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                    {proc.pid}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="w-16 bg-dark-border rounded-full h-2 mr-2">
-                        <div
-                          className="bg-gradient-to-r from-accent-primary to-accent-secondary h-2 rounded-full transition-all duration-300"
-                          style={{
-                            width: `${Math.min(proc.cpu_percent, 100)}%`,
-                          }}
-                        />
-                      </div>
-                      <span className="text-sm text-white">
-                        {proc.cpu_percent}%
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                    {proc.memory_mb} MB
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`text-sm font-medium ${getStatusColor(
-                        proc.status
-                      )}`}
-                    >
-                      {proc.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-2">
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        showProcessDetails(proc.pid);
-                      }}
-                      className="inline-flex items-center p-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors"
-                      title="Details"
-                    >
-                      <Info className="w-4 h-4" />
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: proc.protected ? 1 : 1.1 }}
-                      whileTap={{ scale: proc.protected ? 1 : 0.9 }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSuspendProcess(
-                          proc.pid,
-                          proc.name,
-                          proc.protected
-                        );
-                      }}
-                      className={`inline-flex items-center p-2 rounded-lg transition-colors ${
-                        proc.protected
-                          ? "bg-gray-500/20 text-gray-500 cursor-not-allowed"
-                          : "bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30"
-                      }`}
-                      title={
-                        proc.protected ? "Protected System Process" : "Suspend"
-                      }
-                      disabled={proc.protected}
-                    >
-                      <Pause className="w-4 h-4" />
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: proc.protected ? 1 : 1.1 }}
-                      whileTap={{ scale: proc.protected ? 1 : 0.9 }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleKillProcess(proc.pid, proc.name, proc.protected);
-                      }}
-                      className={`inline-flex items-center p-2 rounded-lg transition-colors ${
-                        proc.protected
-                          ? "bg-gray-500/20 text-gray-500 cursor-not-allowed"
-                          : "bg-red-500/20 text-red-400 hover:bg-red-500/30"
-                      }`}
-                      title={
-                        proc.protected
-                          ? "Protected System Process"
-                          : "End Process"
-                      }
-                      disabled={proc.protected}
-                    >
-                      <XCircle className="w-4 h-4" />
-                    </motion.button>
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Table Header */}
+        <div className="bg-dark-elevated/50 flex items-center px-6 py-4 border-b border-dark-border">
+          <div
+            onClick={() => handleSort("name")}
+            className="flex-1 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+          >
+            Name {sortBy === "name" && (sortOrder === "asc" ? "↑" : "↓")}
+          </div>
+          <div
+            onClick={() => handleSort("pid")}
+            className="w-24 text-center text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+          >
+            PID {sortBy === "pid" && (sortOrder === "asc" ? "↑" : "↓")}
+          </div>
+          <div
+            onClick={() => handleSort("cpu_percent")}
+            className="w-32 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:text-white transition-colors px-2"
+          >
+            CPU %{" "}
+            {sortBy === "cpu_percent" && (sortOrder === "asc" ? "↑" : "↓")}
+          </div>
+          <div
+            onClick={() => handleSort("memory_mb")}
+            className="w-28 text-right text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:text-white transition-colors px-2"
+          >
+            Memory {sortBy === "memory_mb" && (sortOrder === "asc" ? "↑" : "↓")}
+          </div>
+          <div
+            onClick={() => handleSort("status")}
+            className="w-28 text-center text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:text-white transition-colors px-2"
+          >
+            Status {sortBy === "status" && (sortOrder === "asc" ? "↑" : "↓")}
+          </div>
+          <div className="w-40 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
+            Actions
+          </div>
         </div>
+
+        {/* Process List (Virtual scrolling) */}
+        <List
+          height={600}
+          itemCount={filteredProcesses.length}
+          itemSize={72}
+          width="100%"
+          ref={listRef}
+        >
+          {ProcessRow}
+        </List>
       </div>
 
       {/* Process Details Modal */}
@@ -442,6 +579,32 @@ export default function ProcessList({ processes, loading, onRefresh }) {
                   </div>
                 </div>
 
+                {/* Priority Control */}
+                {!processDetails.protected && (
+                  <div>
+                    <p className="text-gray-400 text-sm mb-2">
+                      Process Priority
+                    </p>
+                    <select
+                      className="w-full px-4 py-2 bg-dark-elevated border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-primary text-white"
+                      onChange={(e) =>
+                        handleChangePriority(
+                          processDetails.pid,
+                          processDetails.name,
+                          parseInt(e.target.value)
+                        )
+                      }
+                      defaultValue="0"
+                    >
+                      <option value="19">Idle (19)</option>
+                      <option value="10">Below Normal (10)</option>
+                      <option value="0">Normal (0)</option>
+                      <option value="-10">Above Normal (-10)</option>
+                      <option value="-20">High (-20)</option>
+                    </select>
+                  </div>
+                )}
+
                 {processDetails.exe && (
                   <div>
                     <p className="text-gray-400 text-sm mb-1">
@@ -464,12 +627,60 @@ export default function ProcessList({ processes, loading, onRefresh }) {
                   )}
 
                 <div className="flex space-x-3 pt-4">
+                  {processDetails.status === "stopped" ? (
+                    <button
+                      onClick={() => {
+                        handleResumeProcess(processDetails.pid);
+                        setShowModal(false);
+                      }}
+                      className="flex items-center space-x-2 px-6 py-3 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors"
+                      title="Resume Process"
+                    >
+                      <Play className="w-4 h-4" />
+                      <span>Resume Process</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        handleSuspendProcess(
+                          processDetails.pid,
+                          processDetails.name,
+                          processDetails.protected
+                        );
+                        if (!processDetails.protected) {
+                          setShowModal(false);
+                        }
+                      }}
+                      className={`flex items-center space-x-2 ${
+                        processDetails.protected
+                          ? "bg-gray-500/20 text-gray-500 cursor-not-allowed px-6 py-3 rounded-lg"
+                          : "px-6 py-3 bg-yellow-500/20 text-yellow-400 rounded-lg hover:bg-yellow-500/30 transition-colors"
+                      }`}
+                      disabled={processDetails.protected}
+                      title={
+                        processDetails.protected
+                          ? "Protected System Process"
+                          : "Suspend Process"
+                      }
+                    >
+                      {processDetails.protected && (
+                        <Shield className="w-4 h-4" />
+                      )}
+                      <Pause className="w-4 h-4" />
+                      <span>
+                        {processDetails.protected
+                          ? "Protected Process"
+                          : "Suspend Process"}
+                      </span>
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       handleKillProcess(
                         processDetails.pid,
                         processDetails.name,
-                        processDetails.protected
+                        processDetails.protected,
+                        forceKill
                       );
                       if (!processDetails.protected) {
                         setShowModal(false);

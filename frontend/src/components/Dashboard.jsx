@@ -7,6 +7,7 @@ import {
   Server,
   TrendingUp,
   Zap,
+  AlertTriangle,
 } from "lucide-react";
 import {
   AreaChart,
@@ -17,10 +18,21 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useState, useEffect } from "react";
+import {
+  CPU_HISTORY_LENGTH,
+  MEMORY_HISTORY_LENGTH,
+  CPU_ALERT_THRESHOLD,
+  MEMORY_ALERT_THRESHOLD,
+  DISK_ALERT_THRESHOLD,
+} from "../constants";
 
 export default function Dashboard({ systemStats, processes, loading }) {
-  const [cpuHistory, setCpuHistory] = useState(Array(20).fill(0));
-  const [memHistory, setMemHistory] = useState(Array(20).fill(0));
+  const [cpuHistory, setCpuHistory] = useState(
+    Array(CPU_HISTORY_LENGTH).fill(0)
+  );
+  const [memHistory, setMemHistory] = useState(
+    Array(MEMORY_HISTORY_LENGTH).fill(0)
+  );
 
   useEffect(() => {
     if (systemStats) {
@@ -47,15 +59,34 @@ export default function Dashboard({ systemStats, processes, loading }) {
     );
   }
 
-  const StatCard = ({ icon: Icon, title, value, subtitle, color, trend }) => (
-    <motion.div whileHover={{ scale: 1.02, y: -5 }} className="stat-card group">
+  const StatCard = ({
+    icon: Icon,
+    title,
+    value,
+    subtitle,
+    color,
+    trend,
+    alert,
+  }) => (
+    <motion.div
+      whileHover={{ scale: 1.02, y: -5 }}
+      className={`stat-card group ${
+        alert ? "ring-2 ring-accent-danger ring-opacity-50" : ""
+      }`}
+    >
       <div className="flex items-start justify-between mb-4">
         <div
           className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}
         >
           <Icon className="w-6 h-6 text-white" />
         </div>
-        {trend && (
+        {alert && (
+          <div className="flex items-center space-x-1 text-accent-danger text-sm animate-pulse">
+            <AlertTriangle className="w-4 h-4" />
+            <span>Alert</span>
+          </div>
+        )}
+        {!alert && trend && (
           <div className="flex items-center space-x-1 text-accent-success text-sm">
             <TrendingUp className="w-4 h-4" />
             <span>{trend}</span>
@@ -81,13 +112,14 @@ export default function Dashboard({ systemStats, processes, loading }) {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <StatCard
           icon={Cpu}
           title="CPU Usage"
           value={`${systemStats.cpu.percent.toFixed(1)}%`}
           subtitle={`${systemStats.cpu.cores.logical} cores`}
           color="from-blue-500 to-purple-500"
+          alert={systemStats.cpu.percent >= CPU_ALERT_THRESHOLD}
         />
 
         <StatCard
@@ -98,6 +130,7 @@ export default function Dashboard({ systemStats, processes, loading }) {
             systemStats.memory.total_formatted
           }`}
           color="from-purple-500 to-pink-500"
+          alert={systemStats.memory.percent >= MEMORY_ALERT_THRESHOLD}
         />
 
         <StatCard
@@ -108,6 +141,7 @@ export default function Dashboard({ systemStats, processes, loading }) {
             systemStats.disk.total_formatted
           }`}
           color="from-orange-500 to-red-500"
+          alert={systemStats.disk.percent >= DISK_ALERT_THRESHOLD}
         />
 
         <StatCard
@@ -119,27 +153,24 @@ export default function Dashboard({ systemStats, processes, loading }) {
           } running`}
           color="from-green-500 to-teal-500"
         />
-      </div>
 
-      {/* GPU Stats Row */}
-      {systemStats.gpu_available &&
-        systemStats.gpu &&
-        systemStats.gpu.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {systemStats.gpu.map((gpu, index) => (
-              <StatCard
-                key={gpu.id}
-                icon={Zap}
-                title={`GPU ${index}: ${gpu.name}`}
-                value={`${gpu.load.toFixed(1)}%`}
-                subtitle={`${(gpu.memory_used / 1024).toFixed(1)}GB / ${(
-                  gpu.memory_total / 1024
-                ).toFixed(1)}GB (${gpu.memory_percent.toFixed(1)}%)`}
-                color="from-yellow-500 to-orange-500"
-              />
-            ))}
-          </div>
-        )}
+        {/* GPU Stats - First GPU Only */}
+        {systemStats.gpu_available &&
+          systemStats.gpu &&
+          systemStats.gpu.length > 0 && (
+            <StatCard
+              icon={Zap}
+              title={`GPU 0: ${systemStats.gpu[0].name}`}
+              value={`${systemStats.gpu[0].load.toFixed(1)}%`}
+              subtitle={`${(systemStats.gpu[0].memory_used / 1024).toFixed(
+                1
+              )}GB / ${(systemStats.gpu[0].memory_total / 1024).toFixed(
+                1
+              )}GB (${systemStats.gpu[0].memory_percent.toFixed(1)}%)`}
+              color="from-yellow-500 to-orange-500"
+            />
+          )}
+      </div>
       {systemStats.gpu_available === false && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
